@@ -1,66 +1,78 @@
-const express = require("express");
-const books = require("./books")
+const express = require('express')
+const bodyParser = require('body-parser')
+const fs = require('fs')
+const path = require('path');
+const books = require("./books.json");
 
 const app = express()
-app.use(express.json())
+
+
+
+// app.use(express.urlencoded())
+
+const filePath = path.join(__dirname, 'books.json')
+console.log(filePath)
+
+// saving
+const save = (newArray) => {
+    console.log(newArray)
+    fs.writeFileSync(filePath, JSON.stringify(newArray))
+}
+
+// reading
+app.get('/bookTitle', (req, res) => {
+    const newArray = fs.readFileSync(filePath);
+    res.json({
+        books: JSON.parse(newArray)
+    })
+})
+
+app.get('/bookTitle/:id', (req, res) => {
+
+    const findBook = books.find((book) => book.book === req.params.id)
+    res.json(findBook)
+})
+
+//Create function
+app.post('/bookTitle', bodyParser.json(), (req, res) => {
+    const newbook = [...books, { id: books.length + 1, title: req.body.title }];
+    console.log(books)
+    save(newbook);
+    res.json({
+        newbook
+    })
+})
+
+//Update function
+app.put('/bookTitle/:id', bodyParser.json(), (req, res) => {
+    const id = req.params.id;
+    const title = req.body.title;
+    const newArray = books.map(item => {
+        if (item.id === +id) {
+            item.title = title
+        }
+        return item
+    })
+    console.log(newArray)
+
+    save(newArray)
+    res.json({
+        status: 'success',
+        newArray
+    })
+})
+
+//Delete function
+app.delete('/bookTitle/:id', (req, res) => {
+    const bk = books.filter((book) => book.id !== +req.params.id)
+    save(bk)
+    res.json({
+        status: 'success',
+        removed: req.params.id,
+        newLength: bk.length,
+    })
+})
 
 app.listen(9090, () => {
-    console.log("localhost running:9090");
-})
-
-
-app.get('/', (req, res) => {
-    res.json({ message: "Working" })
-})
-
-app.get('/api/books', (req, res) => {
-    res.json(books)
-})
-
-app.post('/api/books', (req, res) => {
-    const title = {
-        id: books.length + 1,
-        books: req.body.books
-    }
-    books.push(title)
-    res.json(books)
-})
-
-app.put('/api/books/:id', (req, res) => {
-    let id = req.params.id
-
-    let books = req.body.books
-
-    let index = books.findIndex((books) => {
-        return (books.id == Number.parseInt(id))
-    })
-
-    console.log(id, req.body, index);
-
-    if (index >= 0) {
-        let book = books[index]
-        book.books = books
-        res.json(book)
-    } else {
-        res.status(404)
-        res.end()
-    }
-
-    console.log(id);
-    res.json(id)
-})
-
-app.delete("/api/books/:id", (req, res) => {
-    let id = request.params.id;
-    let index = books.findIndex((books) => {
-        return (books.id == Number.parseInt(id))
-    })
-    if (index >= 0) {
-        let book = books[index]
-        books.splice(index, 1)
-        res.json(book)
-    } else {
-        res.status(404)
-    }
-
+    console.log('localhost running:9090')
 })
